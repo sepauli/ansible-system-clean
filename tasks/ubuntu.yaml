@@ -1,0 +1,134 @@
+---
+#- name: Purge unnecessary packages
+#  ansible.builtin.apt:
+#    name: "{{ item.name }}"
+#    state: "{{ item.state }}"
+#    purge: "{{ item.purge }}"
+#  loop: "{{ _apt_purge }}"
+#  register: result
+#  until: result is succeeded
+
+- name: Remove unnecessary packages from the cache
+  ansible.builtin.apt:
+    autoclean: true
+
+- name: Remove dependencies that are no longer required
+  ansible.builtin.apt:
+    autoremove: true
+
+- name: Check if audit.log file exists
+  ansible.builtin.stat:
+    path: /var/log/audit/audit.log
+  register: audit_log_file
+
+# - name: Truncate audit.log file to zero bytes
+#   ansible.builtin.command:
+#     cmd: truncate -s 0 /var/log/audit/audit.log
+#   when: audit_log_file.stat.exists
+
+- name: Truncate audit.log file to zero bytes
+  ansible.builtin.copy:
+    dest: /var/log/audit/audit.log
+    content: ''
+    owner: root
+    group: adm
+    mode: '0640'
+  when: audit_log_file.stat.exists
+
+- name: Check if wtmp file exists
+  ansible.builtin.stat:
+    path: /var/log/wtmp
+  register: wtmp_file
+
+# - name: Truncate wtmp file to zero bytes
+#   ansible.builtin.command:
+#     cmd: truncate -s 0 /var/log/wtmp
+#   when: wtmp_file.stat.exists
+
+- name: Truncate wtmp file to zero bytes
+  ansible.builtin.copy:
+    dest: /var/log/wtmp
+    content: ''
+    owner: root
+    group: utmp
+    mode: '0664'
+  when: wtmp_file.stat.exists
+
+- name: Check if lastlog file exists
+  ansible.builtin.stat:
+    path: /var/log/lastlog
+  register: lastlog_file
+
+# - name: Truncate lastlog file to zero bytes
+#   ansible.builtin.command:
+#     cmd: truncate -s 0 /var/log/lastlog
+#   when: lastlog_file.stat.exists
+
+- name: Truncate lastlog file to zero bytes
+  ansible.builtin.copy:
+    dest: /var/log/lastlog
+    content: ''
+    owner: root
+    group: utmp
+    mode: '0664'
+  when: lastlog_file.stat.exists
+
+- name: Cleaning persistent udev rules
+  ansible.builtin.file:
+    path: /etc/udev/rules.d/70-persistent-net.rules
+    state: absent
+
+- name: Remove the /tmp directory recursively
+  ansible.builtin.file:
+    path: /tmp/*
+    state: absent
+
+- name: Remove the /var/tmp/ directory recursively
+  ansible.builtin.file:
+    path: /var/tmp/*
+    state: absent
+
+- name: Check if machine-id file exists
+  ansible.builtin.stat:
+    path: /etc/machine-id
+  register: machine_id_file
+
+# - name: Truncate machine-id file to zero bytes
+#   ansible.builtin.command:
+#     cmd: truncate -s 0 /etc/machine-id
+#   when: machine_id_file.stat.exists
+
+- name: Truncate machine-id file to zero bytes
+  ansible.builtin.copy:
+    dest: /etc/machine-id
+    content: ''
+    owner: root
+    group: root
+    mode: '0444'
+  when: machine_id_file.stat.exists
+
+# - name: Remove the /var/lib/dbus/machine-id file
+#   ansible.builtin.file:
+#     path: /var/lib/dbus/machine-id
+#     state: absent
+
+# - name: Create machine-id symbolic link
+#   ansible.builtin.file:
+#    src: /etc/machine-id
+#    dest: /var/lib/dbus/machine-id
+#    state: link
+
+- name: Remove the bash_history
+  ansible.builtin.file:
+    path: /root/.bash_history
+    state: absent
+
+- name: Remove the bash_history
+  ansible.builtin.file:
+    path: ~/.bash_history
+    state: absent
+
+# - name: Remove file netplan file from initial cloud-init netplan (not needed anymore)
+#   ansible.builtin.file:
+#     path: /etc/netplan/50-cloud-init.yaml
+#     state: absent

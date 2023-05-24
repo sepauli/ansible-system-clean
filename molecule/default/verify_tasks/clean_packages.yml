@@ -1,0 +1,10 @@
+---
+- name: Gather package facts
+  ansible.builtin.package_facts:
+    manager: auto
+
+- name: Ensure packages are purged
+  assert:
+    that:
+      - "item not in ansible_facts.packages"
+  loop: "{{ _apt_purge }}"      
